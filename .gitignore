@@ -1,0 +1,6 @@
+*.obj
+*.mtl
+*.png
+*.jpg
+*.webp
+__pycache__/
