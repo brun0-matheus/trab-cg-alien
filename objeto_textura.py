@@ -1,11 +1,14 @@
 from loading_utils import load_obj_and_texture
 from OpenGL.GL import *
+import glm
 import numpy as np
 
 class ObjetoTextura:  
     # Classe genérica que lê um .obj e carrega sua textura
-    def __init__(self, object_filename: str, filtro=None):
+    def __init__(self, object_filename: str, diffuse: glm.vec3, specular: glm.vec3, filtro=None):
         self.object_filename = object_filename
+        self.diffuse = diffuse
+        self.specular = specular
         self.filtro = filtro or (lambda xyz: True)
     
     def get_model():   # Filhos tem que implementar
@@ -23,8 +26,12 @@ class ObjetoTextura:
 
         return verts_coords, texture_coords, normals
 
-    def desenha(self, ini_pos, program):     
+    def desenha(self, ini_pos, shader):     
         # Desenha o objeto
+        program = shader.ID
+
+        shader.setVec3('materialDiffuse', self.diffuse)
+        shader.setVec3('materialSpecular', self.specular)
         
         mat_model = self.get_model() 
         loc_transformation = glGetUniformLocation(program, "model")

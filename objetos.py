@@ -30,7 +30,7 @@ SERVIDOR
 class Servidor(ObjetoTextura):   
     def __init__(self, i: int):
         self.i = i
-        return super().__init__('ServerV2+console.obj')
+        return super().__init__('ServerV2+console.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):       
         s = 0.04
@@ -42,7 +42,7 @@ LOUSA
 
 class Lousa(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('footer.obj')
+        return super().__init__('footer.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.0003
@@ -54,7 +54,7 @@ ALIEN
 
 class Alien(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('alien.obj')
+        return super().__init__('alien.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.02
@@ -67,7 +67,7 @@ ANTENA
 class Antena(ObjetoTextura):   
     def __init__(self):
         self.angle = 0
-        return super().__init__('antena.obj', lambda xyz: xyz[1] > 2.1 or xyz[0] > 1)
+        return super().__init__('antena.obj', glm.vec3(1), glm.vec3(1), lambda xyz: xyz[1] > 2.1 or xyz[0] > 1)
 
     def get_model(self):   
         s = 0.025
@@ -88,7 +88,7 @@ CARRO
 class Carro(ObjetoTextura):   
     def __init__(self):
         self.pos = 0
-        return super().__init__('carro.obj')
+        return super().__init__('carro.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.002
@@ -99,7 +99,7 @@ PAINEL SOLAR
 """
 class PainelSolar(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('painel_solar.obj')
+        return super().__init__('painel_solar.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.001
@@ -121,7 +121,7 @@ CASA
 
 class Casa(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('casa.obj')
+        return super().__init__('casa.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.1
@@ -182,7 +182,12 @@ class Chao:
         normals = [(1, 0, 0)] * len(verts)
         return verts, texture_coords, normals
 
-    def desenha(self, ini_pos, program):   
+    def desenha(self, ini_pos, shader):
+        program = shader.ID
+
+        shader.setVec3('materialDiffuse', glm.vec3(1))
+        shader.setVec3('materialSpecular', glm.vec3(1))
+
         mat_model = glm.mat4(1.0)  # identidade
         loc_transformation = glGetUniformLocation(program, "model")
         glUniformMatrix4fv(loc_transformation, 1, GL_TRUE, np.array(mat_model))
@@ -215,7 +220,12 @@ class Sinal:
         # Quadrado
         return [(-1, 0, -1), (-1, 0, 1), (1, 0, -1), (1, 0, 1)], [(0, 0), (0, 1), (1, 0), (1, 1)], [(1, 0, 0)] * 4
 
-    def desenha(self, ini_pos, program):
+    def desenha(self, ini_pos, shader):
+        program = shader.ID
+
+        shader.setVec3('materialDiffuse', glm.vec3(1))
+        shader.setVec3('materialSpecular', glm.vec3(1))
+
         s = self.escala
         
         mat_model = model(0, 0, 0, 1, 2, 7, 3, s, s, s)
@@ -265,7 +275,12 @@ class Skybox:
         normals = [(1, 0, 0)] * len(verts)
         return verts, tex_coords, normals
 
-    def desenha(self, ini_pos, program):
+    def desenha(self, ini_pos, shader):
+        program = shader.ID
+
+        shader.setVec3('materialDiffuse', glm.vec3(1))
+        shader.setVec3('materialSpecular', glm.vec3(1))
+
         mat_model = glm.mat4(1.0)
         loc_transformation = glGetUniformLocation(program, "model")
         glUniformMatrix4fv(loc_transformation, 1, GL_TRUE, np.array(mat_model))
@@ -289,7 +304,7 @@ class Lampada(ObjetoTextura):
     pos = (-0.2, -0.13, 0)
 
     def __init__(self):
-        return super().__init__('LightBulb.obj')
+        return super().__init__('LightBulb.obj', glm.vec3(1), glm.vec3(1))
 
     def get_model(self):   
         s = 0.015

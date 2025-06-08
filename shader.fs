@@ -38,6 +38,8 @@ uniform vec3 viewPos;
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 uniform float shininess;
+uniform vec3 materialSpecular;
+uniform vec3 materialDiffuse;
 
 uniform int numPointLights;
 uniform int numSpotLights;
@@ -85,13 +87,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
     // combine results
-    vec3 diffuse = light.diffuse * diff;
-    //vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
-    vec3 specular = vec3(0);
-    
+    vec3 diffuse = light.diffuse * diff * materialDiffuse;
+    vec3 specular = light.specular * spec * materialSpecular;
     diffuse *= attenuation;
     specular *= attenuation;
-    return (diffuse + specular);
+    return max(diffuse + specular, vec3(0));
 }
 
 // calculates the color when using a spot light.
@@ -119,13 +119,10 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float epsilon = light.cutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
-    vec3 diffuse = light.diffuse * diff * intensity;
-    vec3 specular = light.specular * spec * intensity;
-    vec3 ambient = light.ambient * intensity;
-
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-
-    return (diffuse + specular + ambient);
+    // combine results
+    vec3 diffuse = light.diffuse * diff * materialDiffuse;
+    vec3 specular = light.specular * spec * materialSpecular;
+    diffuse *= attenuation * intensity;
+    specular *= attenuation * intensity;
+    return max(diffuse + specular, vec3(0));
 }

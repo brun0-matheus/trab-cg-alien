@@ -58,7 +58,7 @@ carro = Carro()
 lampada = Lampada()
 #farol = Farol()
 
-objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox()]
+objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
 #objetos.append(carro)
 
@@ -81,50 +81,6 @@ MANDANDO PRA GPU
 """
 
 buffer_VBO = glGenBuffers(3)
-
-'''
-# Manda vértices
-
-vertices = np.zeros(len(vertices_list), [("position", np.float32, 3)])
-vertices['position'] = vertices_list
-
-glBindBuffer(GL_ARRAY_BUFFER, buffer_VBO[0])
-glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-stride = vertices.strides[0]
-offset = ctypes.c_void_p(0)
-loc_vertices = glGetAttribLocation(program, "position")
-glEnableVertexAttribArray(loc_vertices)
-glVertexAttribPointer(loc_vertices, 3, GL_FLOAT, False, stride, offset)
-
-# Manda coordenadas de textura
-
-textures = np.zeros(len(textures_coord_list), [("position", np.float32, 2)]) # duas coordenadas
-textures['position'] = textures_coord_list
-
-glBindBuffer(GL_ARRAY_BUFFER, buffer_VBO[1])
-glBufferData(GL_ARRAY_BUFFER, textures.nbytes, textures, GL_STATIC_DRAW)
-stride = textures.strides[0]
-offset = ctypes.c_void_p(0)
-loc_texture_coord = glGetAttribLocation(program, "texture_coord")
-glEnableVertexAttribArray(loc_texture_coord)
-glVertexAttribPointer(loc_texture_coord, 2, GL_FLOAT, False, stride, offset)
-
-# Manda normais
-
-normals = np.zeros(len(normals_list), [("position", np.float32, 3)])
-normals['position'] = normals_list
-
-
-# Upload data
-#glBindBuffer(GL_ARRAY_BUFFER, buffer_VBO[2])
-#glBufferData(GL_ARRAY_BUFFER, normals.nbytes, normals, GL_STATIC_DRAW)
-#stride = normals.strides[0]
-#offset = ctypes.c_void_p(0)
-loc_normals = glGetAttribLocation(program, "vert_normal")
-print(loc_normals)
-glEnableVertexAttribArray(loc_normals)
-#glVertexAttribPointer(loc_normals, 3, GL_FLOAT, False, stride, offset)
-'''
 
 verts_tudo = []  # agrupa coord de vertice, textura e normal
 assert len(vertices_list) == len(textures_coord_list) and len(vertices_list) == len(normals_list)
@@ -167,6 +123,7 @@ lastFrame = 0.0
 
 # transformações
 mostra_malha = False
+is_inside = False
 
 # Luzes
 lanterna_ativa = True
@@ -177,9 +134,7 @@ EVENTOS DE TECLADO
 """
 
 def key_event(window,key,scancode,action,mods):
-    global mostra_malha
-
-    global lanterna_ativa, lampada_ativa
+    global mostra_malha, is_inside, lanterna_ativa, lampada_ativa
 
     # Quando solta a tecla não é pra fazer nada
     if action == glfw.RELEASE:
@@ -222,7 +177,8 @@ def key_event(window,key,scancode,action,mods):
     elif key == glfw.KEY_O and action == glfw.PRESS:
         lampada_ativa = not lampada_ativa
     elif key == 80 and action == glfw.PRESS: # p -> mostra (ou não) a malha poligonal 
-        mostra_malha = not mostra_malha     
+        #mostra_malha = not mostra_malha     
+        print(camera.Position)
    
     # aplica limites na câmera
     vec_min = (-1.68604, -0.371484, -1.15517)
@@ -231,6 +187,20 @@ def key_event(window,key,scancode,action,mods):
     camera.Position.x = min(vec_max[0], max(vec_min[0], camera.Position.x))
     camera.Position.y = min(vec_max[1], max(vec_min[1], camera.Position.y))
     camera.Position.z = min(vec_max[2], max(vec_min[2], camera.Position.z))
+
+    # verifica se esta dentro da casa
+    p1 = (-0.460817,    -0.38,     0.679173)
+    p2 = (-0.78,    -0.101908,     0.373414)
+    p3 = (0.325651,    -0.38,    -0.38)
+
+    check_in = lambda a,b,c: min(a,b) <= c <= max(a,b)
+
+    if all(check_in(p1[i], p2[i], camera.Position[i]) for i in range(3)):
+        is_inside = True
+    elif all(check_in(p2[i], p3[i], camera.Position[i]) for i in range(3)):
+        is_inside = True
+    else:
+        is_inside = False
 
         
 glfw.set_key_callback(window,key_event)
@@ -299,7 +269,8 @@ ILUMINAÇÃO
 """
 
 # Lampada
-lampada_luz = Light(position=glm.vec3(-0.2, -0.19, 0),
+lampada_luz = Light(True,
+                    position=glm.vec3(-0.2, -0.19, 0),
                     diffuse=glm.vec3(1.0, 1.0, 0.8),
                     specular=glm.vec3(1.0, 1.0, 0.8),
                     constant=1,
@@ -308,18 +279,17 @@ lampada_luz = Light(position=glm.vec3(-0.2, -0.19, 0),
 
 # SpotLight da câmera
 lanterna = SpotLight(
+    True,
     position=camera.Position,
     direction=glm.normalize(camera.Front),
     cutOff=glm.cos(glm.radians(10)),
     outerCutOff=glm.cos(glm.radians(15)),
-    ambient=glm.vec3(0),
     diffuse=glm.vec3(1.0),
     specular=glm.vec3(0.6),
     constant=1.0,
     linear=0.09,
     quadratic=0.032,
 )
-
 
 """
 LOOP PRINCIPAL
@@ -355,7 +325,7 @@ while not glfw.window_should_close(window):
     # passa parametros do shader
     shader.setVec3('viewPos', camera.Position)
     shader.setFloat('shininess', 32.0)
-    shader.setVec3('ambientLight', glm.vec3(1, 1, 1) * 0.01)
+    shader.setVec3('ambientLight', glm.vec3(1, 1, 1) * 0.1)
 
     # Define quais luzes estão ativas
     point_lights = []
@@ -374,28 +344,36 @@ while not glfw.window_should_close(window):
     # posiciona luzes
     for i in range(len(point_lights)):
         light = point_lights[i]
-        shader.setVec3(f'pointLights[{i}].position', light.position)
-        shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse)
-        shader.setVec3(f'pointLights[{i}].specular', light.specular)
-        shader.setFloat(f'pointLights[{i}].constant', light.constant)
-        shader.setFloat(f'pointLights[{i}].linear', light.linear)
-        shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
+        if light.inside == is_inside:
+            shader.setVec3(f'pointLights[{i}].position', light.position)
+            shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse)
+            shader.setVec3(f'pointLights[{i}].specular', light.specular)
+            shader.setFloat(f'pointLights[{i}].constant', light.constant)
+            shader.setFloat(f'pointLights[{i}].linear', light.linear)
+            shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
+        else:
+            shader.setVec3(f'pointLights[{i}].diffuse', glm.vec3(0))
+            shader.setVec3(f'pointLights[{i}].specular', glm.vec3(0))
 
     for i, light in enumerate(spot_lights):
-        shader.setVec3(f'spotLights[{i}].position', light.position)
-        shader.setVec3(f'spotLights[{i}].direction', light.direction)
-        shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse)
-        shader.setVec3(f'spotLights[{i}].specular', light.specular)
-        shader.setVec3(f'spotLights[{i}].ambient', light.ambient)
-        shader.setFloat(f'spotLights[{i}].cutOff', light.cutOff)
-        shader.setFloat(f'spotLights[{i}].outerCutOff', light.outerCutOff)
-        shader.setFloat(f'spotLights[{i}].constant', light.constant)
-        shader.setFloat(f'spotLights[{i}].linear', light.linear)
-        shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
+        if light.inside == is_inside:
+            shader.setVec3(f'spotLights[{i}].position', light.position)
+            shader.setVec3(f'spotLights[{i}].direction', light.direction)
+            shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse)
+            shader.setVec3(f'spotLights[{i}].specular', light.specular)
+            shader.setFloat(f'spotLights[{i}].cutOff', light.cutOff)
+            shader.setFloat(f'spotLights[{i}].outerCutOff', light.outerCutOff)
+            shader.setFloat(f'spotLights[{i}].constant', light.constant)
+            shader.setFloat(f'spotLights[{i}].linear', light.linear)
+            shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
+        else:
+            shader.setVec3(f'spotLights[{i}].diffuse', glm.vec3(0))
+            shader.setVec3(f'spotLights[{i}].specular', glm.vec3(0))
+
 
     # desenha objetos
     for objeto, pos in zip(objetos, pos_objetos):
-        objeto.desenha(pos, program)
+        objeto.desenha(pos, shader)
     
     glfw.swap_buffers(window)
     glfw.poll_events()

@@ -3,13 +3,15 @@ import glm
 class Light:
     def __init__(
             self, 
+            inside: bool,
             position: glm.vec3, 
             diffuse: glm.vec3,
             specular: glm.vec3,
             constant: float = 1.0, 
             linear: float = 0.09, 
-            quadratic: float = 0.032
+            quadratic: float = 0.032,
     ):
+        self.inside = inside
         self.position = position
         self.diffuse = diffuse
         self.specular = specular
