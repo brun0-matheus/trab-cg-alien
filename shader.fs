@@ -89,9 +89,10 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     // combine results
     vec3 diffuse = light.diffuse * diff * materialDiffuse;
     vec3 specular = light.specular * spec * materialSpecular;
+
     diffuse *= attenuation;
     specular *= attenuation;
-    return max(diffuse + specular, vec3(0));
+    return diffuse + specular;
 }
 
 // calculates the color when using a spot light.
@@ -124,5 +125,5 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     vec3 specular = light.specular * spec * materialSpecular;
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
-    return max(diffuse + specular, vec3(0));
+    return diffuse + specular;
 }

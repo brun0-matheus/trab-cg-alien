@@ -344,28 +344,30 @@ while not glfw.window_should_close(window):
     # posiciona luzes
     for i in range(len(point_lights)):
         light = point_lights[i]
+        shader.setVec3(f'pointLights[{i}].position', light.position)
+        shader.setFloat(f'pointLights[{i}].constant', light.constant)
+        shader.setFloat(f'pointLights[{i}].linear', light.linear)
+        shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
+
         if light.inside == is_inside:
-            shader.setVec3(f'pointLights[{i}].position', light.position)
             shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse)
             shader.setVec3(f'pointLights[{i}].specular', light.specular)
-            shader.setFloat(f'pointLights[{i}].constant', light.constant)
-            shader.setFloat(f'pointLights[{i}].linear', light.linear)
-            shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
         else:
             shader.setVec3(f'pointLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'pointLights[{i}].specular', glm.vec3(0))
 
     for i, light in enumerate(spot_lights):
+        shader.setVec3(f'spotLights[{i}].position', light.position)
+        shader.setVec3(f'spotLights[{i}].direction', light.direction)
+        shader.setFloat(f'spotLights[{i}].cutOff', light.cutOff)
+        shader.setFloat(f'spotLights[{i}].outerCutOff', light.outerCutOff)
+        shader.setFloat(f'spotLights[{i}].constant', light.constant)
+        shader.setFloat(f'spotLights[{i}].linear', light.linear)
+        shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
+
         if light.inside == is_inside:
-            shader.setVec3(f'spotLights[{i}].position', light.position)
-            shader.setVec3(f'spotLights[{i}].direction', light.direction)
             shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse)
             shader.setVec3(f'spotLights[{i}].specular', light.specular)
-            shader.setFloat(f'spotLights[{i}].cutOff', light.cutOff)
-            shader.setFloat(f'spotLights[{i}].outerCutOff', light.outerCutOff)
-            shader.setFloat(f'spotLights[{i}].constant', light.constant)
-            shader.setFloat(f'spotLights[{i}].linear', light.linear)
-            shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
         else:
             shader.setVec3(f'spotLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'spotLights[{i}].specular', glm.vec3(0))
