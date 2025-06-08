@@ -281,3 +281,34 @@ class Skybox:
             glDrawArrays(GL_TRIANGLE_STRIP, ini_pos, 4)
             ini_pos+=4
 
+"""
+Lâmpada
+"""
+
+class Lampada(ObjetoTextura):   
+    pos = (-0.2, -0.13, 0)
+
+    def __init__(self):
+        return super().__init__('LightBulb.obj')
+
+    def get_model(self):   
+        s = 0.015
+        return model(180, 0, 0, 1, -0.2, -0.13, 0, s, s, s)
+
+"""
+Farol
+"""
+
+class Farol(ObjetoTextura):   
+    def __init__(self):
+        self.pos = 0
+        return super().__init__('Farol.obj')
+
+    def get_model(self):   
+        s = 0.002
+        return model(90, 0, 1, 0, self.pos, -0.5, 1, s, s, s)
+
+"""
+Lanterna
+"""
+

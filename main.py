@@ -55,9 +55,11 @@ CRIANDO OBJETOS
 antena = Antena()
 sinal = Sinal()
 carro = Carro()
+lampada = Lampada()
+#farol = Farol()
 
-objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Casa(), Chao(), Skybox()]
-objetos += [antena, sinal]
+objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox()]
+objetos += [antena, sinal, lampada]
 #objetos.append(carro)
 
 # Vetor que contém vértices de todos objetos
@@ -166,12 +168,18 @@ lastFrame = 0.0
 # transformações
 mostra_malha = False
 
+# Luzes
+lanterna_ativa = True
+lampada_ativa = True
+
 """
 EVENTOS DE TECLADO
 """
 
 def key_event(window,key,scancode,action,mods):
-    global mostra_malha 
+    global mostra_malha
+
+    global lanterna_ativa, lampada_ativa
 
     # Quando solta a tecla não é pra fazer nada
     if action == glfw.RELEASE:
@@ -207,6 +215,12 @@ def key_event(window,key,scancode,action,mods):
         if carro.pos <= -5.10:
             carro.pos = 5
                       # (só ativa quando aperta pela primeira vez)
+    # Tecla L para alternar a lanterna
+    elif key == glfw.KEY_P and action == glfw.PRESS:
+        lanterna_ativa = not lanterna_ativa
+    # Tecla T para alternar a lâmpada
+    elif key == glfw.KEY_O and action == glfw.PRESS:
+        lampada_ativa = not lampada_ativa
     elif key == 80 and action == glfw.PRESS: # p -> mostra (ou não) a malha poligonal 
         mostra_malha = not mostra_malha     
    
@@ -284,10 +298,28 @@ def projection():
 ILUMINAÇÃO
 """
 
-point_lights = [
-        Light(glm.vec3(0, 0, 0), diffuse=glm.vec3(1, 1, 1)*0.5, specular=glm.vec3(0, 0, 0))
-]
-spot_lights = []
+# Lampada
+lampada_luz = Light(position=glm.vec3(-0.2, -0.19, 0),
+                    diffuse=glm.vec3(1.0, 1.0, 0.8),
+                    specular=glm.vec3(1.0, 1.0, 0.8),
+                    constant=1,
+                    linear=0.136,
+                    quadratic=0.036)
+
+# SpotLight da câmera
+lanterna = SpotLight(
+    position=camera.Position,
+    direction=glm.normalize(camera.Front),
+    cutOff=glm.cos(glm.radians(10)),
+    outerCutOff=glm.cos(glm.radians(15)),
+    ambient=glm.vec3(0),
+    diffuse=glm.vec3(1.0),
+    specular=glm.vec3(0.6),
+    constant=1.0,
+    linear=0.09,
+    quadratic=0.032,
+)
+
 
 """
 LOOP PRINCIPAL
@@ -321,9 +353,23 @@ while not glfw.window_should_close(window):
     glUniformMatrix4fv(loc_projection, 1, GL_TRUE, mat_projection)    
 
     # passa parametros do shader
-    shader.setVec3('viewPos', camera.Front)
+    shader.setVec3('viewPos', camera.Position)
     shader.setFloat('shininess', 32.0)
-    shader.setVec3('ambientLight', glm.vec3(1, 1, 1) * 0.1)
+    shader.setVec3('ambientLight', glm.vec3(1, 1, 1) * 0.01)
+
+    # Define quais luzes estão ativas
+    point_lights = []
+    if lampada_ativa:
+        point_lights.append(lampada_luz)
+
+    spot_lights = []
+    if lanterna_ativa:
+        spot_lights.append(lanterna)
+        spot_lights[0].direction = glm.normalize(camera.Front)
+        spot_lights[0].position = camera.Position
+
+    shader.setInt('numPointLights', len(point_lights))
+    shader.setInt('numSpotLights', len(spot_lights))
 
     # posiciona luzes
     for i in range(len(point_lights)):
@@ -335,9 +381,17 @@ while not glfw.window_should_close(window):
         shader.setFloat(f'pointLights[{i}].linear', light.linear)
         shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
 
-    shader.setInt('numPointLights', len(point_lights))
-    shader.setInt('numSpotLights', len(spot_lights))
-
+    for i, light in enumerate(spot_lights):
+        shader.setVec3(f'spotLights[{i}].position', light.position)
+        shader.setVec3(f'spotLights[{i}].direction', light.direction)
+        shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse)
+        shader.setVec3(f'spotLights[{i}].specular', light.specular)
+        shader.setVec3(f'spotLights[{i}].ambient', light.ambient)
+        shader.setFloat(f'spotLights[{i}].cutOff', light.cutOff)
+        shader.setFloat(f'spotLights[{i}].outerCutOff', light.outerCutOff)
+        shader.setFloat(f'spotLights[{i}].constant', light.constant)
+        shader.setFloat(f'spotLights[{i}].linear', light.linear)
+        shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
 
     # desenha objetos
     for objeto, pos in zip(objetos, pos_objetos):

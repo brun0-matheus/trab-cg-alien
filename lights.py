@@ -17,10 +17,15 @@ class Light:
         self.linear = linear
         self.quadratic = quadratic
 
-def SpotLight(Light):
-    def __init__(*args, **kwargs):
-        self.cutoff = kwargs.pop('cutoff', glm.cos(glm.radians(12.5)))
-        self.outer_cutoff = kwargs.pop('outer_cutoff', glm.cose(glm.radians(15)))
-
+class SpotLight(Light):
+    def __init__(self, *args, **kwargs):
+        self.direction = kwargs.pop('direction', glm.vec3(0.0, 0.0, -1.0))
+        self.cutOff = kwargs.pop('cutOff', glm.cos(glm.radians(12.5)))
+        self.outerCutOff = kwargs.pop('outerCutOff', glm.cos(glm.radians(17.5)))
+        self.ambient = kwargs.pop('ambient', glm.vec3(0.05))
         super().__init__(*args, **kwargs)
+
+
+
+
 
