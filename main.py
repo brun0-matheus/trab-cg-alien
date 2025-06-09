@@ -1,17 +1,19 @@
+# Bibliotecas e módulos
 import glfw
 from OpenGL.GL import *
 import numpy as np
 import glm
 import math
+
+# Módulos customizados
 from shader_m import Shader
 from objetos import *
 from camera import Camera
 from lights import Light, SpotLight
 
 """
-INICIALIZANDO JANELA
+INICIALIZAÇÃO DA JANELA
 """
-
 glfw.init()
 glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
 largura, altura = 700, 700
@@ -20,38 +22,32 @@ window = glfw.create_window(largura, altura, "WOW!", None, None)
 if window is None:
     print("Failed to create GLFW window")
     glfwTerminate()
-    
 glfw.make_context_current(window)
 
 """
-COMPILANDO E MANDANDO PRA GPU
+COMPILANDO SHADERS
 """
-
-# Set shaders source
 shader = Shader('shader.vs', 'shader.fs')
 shader.use()
 program = shader.ID
 
 """
-LINKAGEM E ATIVANDO OPENGL PRA TEXTURA
+ATIVAÇÕES OPENGL
 """
-
 glEnable(GL_TEXTURE_2D)
 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE)
-glEnable( GL_BLEND )
-glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA )
+glEnable(GL_BLEND)
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 glEnable(GL_LINE_SMOOTH)
 
 """
-CRIANDO CAMERA
+INICIALIZA CÂMERA
 """
 camera = Camera(position=glm.vec3(0.395353, -0.0869291, 2.15247), up=glm.vec3(0.0, 1.0, 0.0))
 
-
-""" 
-CRIANDO OBJETOS
 """
-
+CARREGAMENTO DE OBJETOS
+"""
 antena = Antena()
 sinal = Sinal()
 carro = Carro()
@@ -59,13 +55,9 @@ lampada = Lampada()
 
 objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), TintaInvisivel(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
-#objetos.append(carro)
 
-# Vetor que contém vértices de todos objetos
-vertices_list = []
-textures_coord_list = []
-normals_list = []
-# Vetor que armazena a posição que cada objeto começa no vetor global de vértices
+# Dados de geometria
+vertices_list, textures_coord_list, normals_list = [], [], []
 pos_objetos = [0]*len(objetos)
 
 for i, objeto in enumerate(objetos):
@@ -76,14 +68,13 @@ for i, objeto in enumerate(objetos):
     normals_list.extend(normal)
 
 """
-MANDANDO PRA GPU
+ENVIANDO DADOS PARA GPU
 """
-
 buffer_VBO = glGenBuffers(3)
+verts_tudo = []
 
-verts_tudo = []  # agrupa coord de vertice, textura e normal
-assert len(vertices_list) == len(textures_coord_list) and len(vertices_list) == len(normals_list)
-
+# Junta vértices, normais e texturas em um único array
+assert len(vertices_list) == len(textures_coord_list) == len(normals_list)
 for i in range(len(vertices_list)):
     verts_tudo.extend(vertices_list[i])
     verts_tudo.extend(normals_list[i])
@@ -91,9 +82,9 @@ for i in range(len(vertices_list)):
 
 vertices = glm.array(glm.float32, *map(float, verts_tudo))
 
+# Configura VBO e VAO
 VAO = glGenVertexArrays(1)
 VBO = glGenBuffers(1)
-
 glBindBuffer(GL_ARRAY_BUFFER, VBO)
 glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
 
@@ -105,25 +96,18 @@ glEnableVertexAttribArray(1)
 glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * glm.sizeof(glm.float32), ctypes.c_void_p(6 * glm.sizeof(glm.float32)))
 glEnableVertexAttribArray(2)
 
-
 """
-GLOBAIS PARA TRANSFORMACOES
+VARIÁVEIS GLOBAIS
 """
-
-# camera
-
 firstMouse = True
-lastX =  largura / 2.0
-lastY =  altura / 2.0
+lastX = largura / 2.0
+lastY = altura / 2.0
 
-# timing
-deltaTime = 0.0	# time between current frame and last frame
+deltaTime = 0.0
 lastFrame = 0.0
 
-# transformações
 is_inside = False
 
-# Luzes
 lanterna_ativa = True
 lampada_ativa = True
 farol_ativo = True
@@ -136,20 +120,18 @@ mult_specular = 1
 """
 EVENTOS DE TECLADO
 """
-
 def key_event(window,key,scancode,action,mods):
     global is_inside, lanterna_ativa, lampada_ativa, farol_ativo
-    global luz_ambiente_ativa
-    global mult_ambient, mult_diffuse, mult_specular
+    global luz_ambiente_ativa, mult_ambient, mult_diffuse, mult_specular
 
-    # Quando solta a tecla não é pra fazer nada
     if action == glfw.RELEASE:
         return
 
     if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
         glfw.set_window_should_close(window, True)
         return
-    
+
+    # Movimentação da câmera
     if key == glfw.KEY_W:
         camera.ProcessKeyboard(camera.FORWARD, deltaTime)
     elif key == glfw.KEY_S:
@@ -158,44 +140,39 @@ def key_event(window,key,scancode,action,mods):
         camera.ProcessKeyboard(camera.LEFT, deltaTime)
     elif key == glfw.KEY_D:
         camera.ProcessKeyboard(camera.RIGHT, deltaTime)
+
+    # Ações nos objetos
     elif key == glfw.KEY_Q:
-        antena.angle -= 1
-        antena.angle = max(antena.angle, -40)
+        antena.angle = max(antena.angle - 1, -40)
     elif key == glfw.KEY_X:
-        sinal.escala += 0.01
-        sinal.escala = min(sinal.escala, 5.3)
+        sinal.escala = min(sinal.escala + 0.01, 5.3)
     elif key == glfw.KEY_Z:
-        sinal.escala -= 0.01
-        sinal.escala = max(sinal.escala, 0.05)
+        sinal.escala = max(sinal.escala - 0.01, 0.05)
+
+    # Movimento do carro
     elif key == glfw.KEY_N:
-        carro.pos += 0.01 
+        carro.pos += 0.01
         if carro.pos >= 5:
             carro.pos = -5
-
         for i in range(2):
             farol[i].position.x = carro.pos + 0.155
     elif key == glfw.KEY_B:
         carro.pos -= 0.01
         if carro.pos <= -5.10:
             carro.pos = 5
-
         for i in range(2):
             farol[i].position.x = carro.pos + 0.155
-    elif key == glfw.KEY_O:
-        mult_ambient += 0.1
-    elif key == glfw.KEY_L:
-        mult_ambient -= 0.1
-        mult_ambient = max(mult_ambient, 0)
-    elif key == glfw.KEY_I:
-        mult_diffuse += 0.1
-    elif key == glfw.KEY_K:
-        mult_diffuse -= 0.1
-        mult_diffuse = max(mult_diffuse, 0)
-    elif key == glfw.KEY_U:
-        mult_specular += 0.1
-    elif key == glfw.KEY_J:
-        mult_specular -= 0.1
-        mult_specular = max(mult_specular, 0)
+
+    # Intensidade da iluminação
+    elif key in [glfw.KEY_O, glfw.KEY_L, glfw.KEY_I, glfw.KEY_K, glfw.KEY_U, glfw.KEY_J]:
+        if key == glfw.KEY_O: mult_ambient += 0.1
+        elif key == glfw.KEY_L: mult_ambient = max(mult_ambient - 0.1, 0)
+        elif key == glfw.KEY_I: mult_diffuse += 0.1
+        elif key == glfw.KEY_K: mult_diffuse = max(mult_diffuse - 0.1, 0)
+        elif key == glfw.KEY_U: mult_specular += 0.1
+        elif key == glfw.KEY_J: mult_specular = max(mult_specular - 0.1, 0)
+
+    # Toggle de luzes
     elif key == glfw.KEY_1 and action == glfw.PRESS:
         lanterna_ativa = not lanterna_ativa
     elif key == glfw.KEY_2 and action == glfw.PRESS:
@@ -208,21 +185,19 @@ def key_event(window,key,scancode,action,mods):
         print(farol[0].position)
         print(farol[1].position)
         print('----')
-   
-    # aplica limites na câmera
+
+    # Limites da câmera e verificação de entrada na casa
     vec_min = (-1.68604, -0.371484, -1.15517)
     vec_max = (1.40885, 1.01796, 2.45549)
-
     camera.Position.x = min(vec_max[0], max(vec_min[0], camera.Position.x))
     camera.Position.y = min(vec_max[1], max(vec_min[1], camera.Position.y))
     camera.Position.z = min(vec_max[2], max(vec_min[2], camera.Position.z))
 
-    # verifica se esta dentro da casa
-    p1 = (-0.460817,    -0.38,     0.679173)
-    p2 = (-0.78,    -0.101908,     0.373414)
-    p3 = (0.325651,    -0.38,    -0.38)
+    p1 = (-0.460817, -0.38, 0.679173)
+    p2 = (-0.78, -0.101908, 0.373414)
+    p3 = (0.325651, -0.38, -0.38)
 
-    check_in = lambda a,b,c: min(a,b) <= c <= max(a,b)
+    check_in = lambda a, b, c: min(a, b) <= c <= max(a, b)
 
     if all(check_in(p1[i], p2[i], camera.Position[i]) for i in range(3)):
         is_inside = True
@@ -231,161 +206,98 @@ def key_event(window,key,scancode,action,mods):
     else:
         is_inside = False
 
-        
-glfw.set_key_callback(window,key_event)
+glfw.set_key_callback(window, key_event)
 
 """
-MOUSE E JANELA
+CALLBACKS DE JANELA E MOUSE
 """
-
 def framebuffer_size_callback(window, largura, altura):
-    # make sure the viewport matches the new window dimensions note that width and 
-    # height will be significantly larger than specified on retina displays.
     glViewport(0, 0, largura, altura)
 
-# glfw: whenever the mouse moves, this callback is called
-# -------------------------------------------------------
 def mouse_callback(window, xpos, ypos):
-    global lastX, lastY, firstMouse 
-   
+    global lastX, lastY, firstMouse
     if firstMouse:
         lastX = xpos
         lastY = ypos
         firstMouse = False
-
     xoffset = xpos - lastX
-    yoffset = lastY - ypos # reversed since y-coordinates go from bottom to top
+    yoffset = lastY - ypos
     lastX = xpos
     lastY = ypos
-
     camera.ProcessMouseMovement(xoffset, yoffset)
 
-
-# glfw: whenever the mouse scroll wheel scrolls, this callback is called
-# ----------------------------------------------------------------------
 def scroll_callback(window, xoffset, yoffset):
     camera.ProcessMouseScroll(yoffset)
-    
+
 glfw.set_framebuffer_size_callback(window, framebuffer_size_callback)
 glfw.set_cursor_pos_callback(window, mouse_callback)
 glfw.set_scroll_callback(window, scroll_callback)
-
-# tell GLFW to capture our mouse
 glfw.set_input_mode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
-
 """
-SLA
+MATRIZES VIEW E PROJECTION
 """
-
-
 def view():
-    mat_view = glm.lookAt(camera.Position, camera.Position + camera.Front, camera.Up)
-    mat_view = np.array(mat_view)
-    return mat_view
+    return np.array(glm.lookAt(camera.Position, camera.Position + camera.Front, camera.Up))
 
 def projection():
-    # perspective parameters: fovy, aspect, near, far
-    mat_projection = glm.perspective(glm.radians(camera.Zoom), largura/altura, 0.1, 100.0)
-    
-    mat_projection = np.array(mat_projection)    
-    return mat_projection
-
+    return np.array(glm.perspective(glm.radians(camera.Zoom), largura / altura, 0.1, 100.0))
 
 """
-ILUMINAÇÃO
+CONFIGURAÇÃO DE ILUMINAÇÃO
 """
+lampada_luz = Light(inside=True, position=glm.vec3(-0.2, -0.19, 0), diffuse=glm.vec3(0.8), specular=glm.vec3(0.6),
+                    constant=1, linear=0.136, quadratic=0.036)
 
-# Lampada
-lampada_luz = Light(
-        inside=True,
-        position=glm.vec3(-0.2, -0.19, 0),
-        diffuse=glm.vec3(0.8),
-        specular=glm.vec3(0.6),
-        constant=1,
-        linear=0.136,
-        quadratic=0.036
-)
-
-# SpotLight da câmera
-lanterna = SpotLight(
-    inside=True,
-    position=camera.Position,
-    direction=glm.normalize(camera.Front),
-    cutOff=glm.cos(glm.radians(10)),
-    outerCutOff=glm.cos(glm.radians(15)),
-    diffuse=glm.vec3(1.0, 0.3, 1.0),  # roxo
-    specular=glm.vec3(0.6),
-    constant=1.0,
-    linear=0.09,
-    quadratic=0.09,
-)
+lanterna = SpotLight(inside=True, position=camera.Position, direction=glm.normalize(camera.Front),
+                     cutOff=glm.cos(glm.radians(10)), outerCutOff=glm.cos(glm.radians(15)),
+                     diffuse=glm.vec3(1.0, 0.3, 1.0), specular=glm.vec3(0.6),
+                     constant=1.0, linear=0.09, quadratic=0.09)
 
 posicoes_farol = [glm.vec3(0.155, -0.445, 1.05), glm.vec3(0.155, -0.445, 0.96)]
-
-farol = [SpotLight(
-    inside=False,
-    position=posicoes_farol[i],
-    direction=glm.vec3(1, 0, 0),
-    cutOff=glm.cos(glm.radians(60)),
-    outerCutOff=glm.cos(glm.radians(80)),
-    diffuse=glm.vec3(1),
-    specular=glm.vec3(0.6),
-    constant=1.0,
-    linear=0.09,
-    quadratic=0.032,
-) for i in range(2)]
+farol = [SpotLight(inside=False, position=posicoes_farol[i], direction=glm.vec3(1, 0, 0),
+                   cutOff=glm.cos(glm.radians(60)), outerCutOff=glm.cos(glm.radians(80)),
+                   diffuse=glm.vec3(1), specular=glm.vec3(0.6),
+                   constant=1.0, linear=0.09, quadratic=0.032) for i in range(2)]
 
 """
 LOOP PRINCIPAL
 """
-
 glfw.show_window(window)
-
-glEnable(GL_DEPTH_TEST) ### importante para 3D
+glEnable(GL_DEPTH_TEST)
 
 while not glfw.window_should_close(window):
     currentFrame = glfw.get_time()
     deltaTime = currentFrame - lastFrame
     lastFrame = currentFrame
-    
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)    
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glClearColor(1.0, 1.0, 1.0, 1.0)
 
-    # envia as matrizes view e projection
-    mat_view = view()
-    loc_view = glGetUniformLocation(program, "view")
-    glUniformMatrix4fv(loc_view, 1, GL_TRUE, mat_view)
+    # Matrizes view e projection
+    glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_TRUE, view())
+    glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projection())
 
-    mat_projection = projection()
-    loc_projection = glGetUniformLocation(program, "projection")
-    glUniformMatrix4fv(loc_projection, 1, GL_TRUE, mat_projection)    
-
-    # passa parametros do shader
+    # Envia dados da câmera e iluminação para shader
     shader.setVec3('viewPos', camera.Position)
     shader.setFloat('shininess', 32.0)
 
-    # Define quais luzes estão ativas
-    point_lights = []
-    if lampada_ativa:
-        point_lights.append(lampada_luz)
-
+    # Ativação das luzes
+    point_lights = [lampada_luz] if lampada_ativa else []
     spot_lights = []
     if lanterna_ativa:
+        lanterna.position = camera.Position
+        lanterna.direction = glm.normalize(camera.Front)
         spot_lights.append(lanterna)
-        spot_lights[0].direction = glm.normalize(camera.Front)
-        spot_lights[0].position = camera.Position
     if farol_ativo:
         spot_lights.extend(farol)
 
-
-    # posiciona luzes
+    # Luzes pontuais
     for i, light in enumerate(point_lights):
         shader.setVec3(f'pointLights[{i}].position', light.position)
         shader.setFloat(f'pointLights[{i}].constant', light.constant)
         shader.setFloat(f'pointLights[{i}].linear', light.linear)
         shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
-
         if light.inside == is_inside:
             shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse * mult_diffuse)
             shader.setVec3(f'pointLights[{i}].specular', light.specular * mult_specular)
@@ -393,6 +305,7 @@ while not glfw.window_should_close(window):
             shader.setVec3(f'pointLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'pointLights[{i}].specular', glm.vec3(0))
 
+    # Spotlights
     for i, light in enumerate(spot_lights):
         shader.setVec3(f'spotLights[{i}].position', light.position)
         shader.setVec3(f'spotLights[{i}].direction', light.direction)
@@ -401,7 +314,6 @@ while not glfw.window_should_close(window):
         shader.setFloat(f'spotLights[{i}].constant', light.constant)
         shader.setFloat(f'spotLights[{i}].linear', light.linear)
         shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
-
         if light.inside == is_inside:
             shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse * mult_diffuse)
             shader.setVec3(f'spotLights[{i}].specular', light.specular * mult_specular)
@@ -409,8 +321,7 @@ while not glfw.window_should_close(window):
             shader.setVec3(f'spotLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'spotLights[{i}].specular', glm.vec3(0))
 
-
-    # desenha objetos
+    # Renderização dos objetos
     for objeto, pos in zip(objetos, pos_objetos):
         shader.setInt('numPointLights', len(point_lights))
         shader.setInt('numSpotLights', len(spot_lights))
@@ -422,8 +333,7 @@ while not glfw.window_should_close(window):
             else:
                 branco = glm.vec3(0.1)
                 roxo = glm.vec3(0.4, 0.1, 0.4) * sinal.escala * 0.5
-
-                shader.setVec3('ambientLight', (branco+roxo) * mult_ambient )
+                shader.setVec3('ambientLight', (branco + roxo) * mult_ambient)
         else:
             shader.setVec3('ambientLight', glm.vec3(0))
 
@@ -434,9 +344,8 @@ while not glfw.window_should_close(window):
             shader.setInt('invisible', 1)
 
         objeto.desenha(pos, shader)
-    
+
     glfw.swap_buffers(window)
     glfw.poll_events()
 
 glfw.terminate()
-
