@@ -79,7 +79,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
+    // inverter normal se luz estiver vindo do lado oposto
+    float diff = abs(dot(normal, lightDir));
+
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
@@ -101,12 +103,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     vec3 lightDir = normalize(fragPos - light.position);
 
     // Diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
-    if (diff == 0.0) {
-        // inverter normal se luz estiver vindo do lado oposto
-        diff = max(dot(-normal, lightDir), 0.0);
-    }
-
+    // inverter normal se luz estiver vindo do lado oposto
+    float diff = abs(dot(normal, lightDir));
     // Specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);

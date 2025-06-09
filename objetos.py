@@ -30,7 +30,7 @@ SERVIDOR
 class Servidor(ObjetoTextura):   
     def __init__(self, i: int):
         self.i = i
-        return super().__init__('ServerV2+console.obj', glm.vec3(1), glm.vec3(1))
+        return super().__init__('ServerV2+console.obj', glm.vec3(1), glm.vec3(1.5))
 
     def get_model(self):       
         s = 0.04
@@ -54,7 +54,7 @@ ALIEN
 
 class Alien(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('alien.obj', glm.vec3(1), glm.vec3(1))
+        return super().__init__('alien.obj', glm.vec3(1), glm.vec3(2))
 
     def get_model(self):   
         s = 0.02
@@ -67,7 +67,7 @@ ANTENA
 class Antena(ObjetoTextura):   
     def __init__(self):
         self.angle = 0
-        return super().__init__('antena.obj', glm.vec3(1), glm.vec3(1), lambda xyz: xyz[1] > 2.1 or xyz[0] > 1)
+        return super().__init__('antena.obj', glm.vec3(1), glm.vec3(3), lambda xyz: xyz[1] > 2.1 or xyz[0] > 1)
 
     def get_model(self):   
         s = 0.025
@@ -88,7 +88,7 @@ CARRO
 class Carro(ObjetoTextura):   
     def __init__(self):
         self.pos = 0
-        return super().__init__('carro.obj', glm.vec3(1), glm.vec3(1))
+        return super().__init__('carro.obj', glm.vec3(1), glm.vec3(3))
 
     def get_model(self):   
         s = 0.002
@@ -121,7 +121,7 @@ CASA
 
 class Casa(ObjetoTextura):   
     def __init__(self):
-        return super().__init__('casa.obj', glm.vec3(1), glm.vec3(1))
+        return super().__init__('casa.obj', glm.vec3(1), glm.vec3(0.1))
 
     def get_model(self):   
         s = 0.1
@@ -145,8 +145,8 @@ class Chao:
         verts = [
             # Chao grama
             (-lim, y_grama, -lim),
-            (lim, y_grama, -lim),
             (-lim, y_grama, lim),
+            (lim, y_grama, -lim),
             (lim, y_grama, lim),
 
             # Piso da casa
@@ -179,14 +179,14 @@ class Chao:
             (0, 0), (resolucao_forro, 0), (0, resolucao_forro), (resolucao_forro, resolucao_forro),
         ] 
 
-        normals = [(1, 0, 0)] * len(verts)
+        normals = [(0, 1, 0)] * len(verts)
         return verts, texture_coords, normals
 
     def desenha(self, ini_pos, shader):
         program = shader.ID
 
         shader.setVec3('materialDiffuse', glm.vec3(1))
-        shader.setVec3('materialSpecular', glm.vec3(1))
+        shader.setVec3('materialSpecular', glm.vec3(0.1))
 
         mat_model = glm.mat4(1.0)  # identidade
         loc_transformation = glGetUniformLocation(program, "model")
@@ -213,18 +213,21 @@ SINAL
 """
 
 class Sinal:
+    def __init__(self):
+        self.own_light = True
+
     def load(self):
         self.texture = load_texture_from_file('eye.png')
         self.escala = 0.1
 
         # Quadrado
-        return [(-1, 0, -1), (-1, 0, 1), (1, 0, -1), (1, 0, 1)], [(0, 0), (0, 1), (1, 0), (1, 1)], [(1, 0, 0)] * 4
+        return [(-1, 0, -1), (-1, 0, 1), (1, 0, -1), (1, 0, 1)], [(0, 0), (0, 1), (1, 0), (1, 1)], [(0, 1, 0)] * 4
 
     def desenha(self, ini_pos, shader):
         program = shader.ID
 
-        shader.setVec3('materialDiffuse', glm.vec3(1))
-        shader.setVec3('materialSpecular', glm.vec3(1))
+        shader.setVec3('materialDiffuse', glm.vec3(0))
+        shader.setVec3('materialSpecular', glm.vec3(0))
 
         s = self.escala
         
@@ -240,6 +243,9 @@ SKYBOX
 """
 
 class Skybox:
+    def __init__(self):
+        self.own_light = True
+
     def load(self):
         self.tex_up = load_texture_from_file('sky_up.jpg')
         self.tex_side = load_texture_from_file('sky_side.jpg')
@@ -250,12 +256,30 @@ class Skybox:
 
         verts = [
             # Cima
-            (-lim, y_ceu, -lim), (lim, y_ceu, -lim), (-lim, y_ceu, lim), (lim, y_ceu, lim),
+            (-lim, y_ceu, -lim), 
+            (lim, y_ceu, -lim), 
+            (-lim, y_ceu, lim), 
+            (lim, y_ceu, lim),
             # Lados
-            (-lim, y_grama, -lim), (lim, y_grama, -lim), (-lim, y_ceu, -lim), (lim, y_ceu, -lim),
-            (-lim, y_grama, lim), (lim, y_grama, lim), (-lim, y_ceu, lim), (lim, y_ceu, lim),
-            (-lim, y_grama, lim), (-lim, y_grama, -lim), (-lim, y_ceu, lim), (-lim, y_ceu, -lim),
-            (lim, y_grama, lim), (lim, y_grama, -lim), (lim, y_ceu, lim), (lim, y_ceu, -lim),
+            (-lim, y_grama, -lim), 
+            (lim, y_grama, -lim), 
+            (-lim, y_ceu, -lim), 
+            (lim, y_ceu, -lim),
+
+            (-lim, y_grama, lim), 
+            (lim, y_grama, lim),
+            (-lim, y_ceu, lim),
+            (lim, y_ceu, lim),
+
+            (-lim, y_grama, lim),
+            (-lim, y_grama, -lim),
+            (-lim, y_ceu, lim),
+            (-lim, y_ceu, -lim),
+
+            (lim, y_grama, lim),
+            (lim, y_grama, -lim),
+            (lim, y_ceu, lim),
+            (lim, y_ceu, -lim),
         ]
 
         # A resolução controla quantas vezes a imagem da textura será repetida (em cada direção)
@@ -278,8 +302,8 @@ class Skybox:
     def desenha(self, ini_pos, shader):
         program = shader.ID
 
-        shader.setVec3('materialDiffuse', glm.vec3(1))
-        shader.setVec3('materialSpecular', glm.vec3(1))
+        shader.setVec3('materialDiffuse', glm.vec3(0))
+        shader.setVec3('materialSpecular', glm.vec3(0))
 
         mat_model = glm.mat4(1.0)
         loc_transformation = glGetUniformLocation(program, "model")
@@ -309,21 +333,4 @@ class Lampada(ObjetoTextura):
     def get_model(self):   
         s = 0.015
         return model(180, 0, 0, 1, -0.2, -0.13, 0, s, s, s)
-
-"""
-Farol
-"""
-
-class Farol(ObjetoTextura):   
-    def __init__(self):
-        self.pos = 0
-        return super().__init__('Farol.obj')
-
-    def get_model(self):   
-        s = 0.002
-        return model(90, 0, 1, 0, self.pos, -0.5, 1, s, s, s)
-
-"""
-Lanterna
-"""
 

@@ -56,11 +56,10 @@ antena = Antena()
 sinal = Sinal()
 carro = Carro()
 lampada = Lampada()
-#farol = Farol()
 
 objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
-#objetos.append(carro)
+objetos.append(carro)
 
 # Vetor que contém vértices de todos objetos
 vertices_list = []
@@ -128,13 +127,19 @@ is_inside = False
 # Luzes
 lanterna_ativa = True
 lampada_ativa = True
+farol_ativo = True
+
+mult_ambient = 0.1
+mult_diffuse = 1
+mult_specular = 1
 
 """
 EVENTOS DE TECLADO
 """
 
 def key_event(window,key,scancode,action,mods):
-    global mostra_malha, is_inside, lanterna_ativa, lampada_ativa
+    global mostra_malha, is_inside, lanterna_ativa, lampada_ativa, farol_ativo
+    global mult_ambient, mult_diffuse, mult_specular
 
     # Quando solta a tecla não é pra fazer nada
     if action == glfw.RELEASE:
@@ -161,24 +166,45 @@ def key_event(window,key,scancode,action,mods):
     elif key == glfw.KEY_Z:
         sinal.escala -= 0.01
         sinal.escala = max(sinal.escala, 0.05)
-    elif key == glfw.KEY_I:
+    elif key == glfw.KEY_N:
         carro.pos += 0.01 
         if carro.pos >= 5:
             carro.pos = -5
-    elif key == glfw.KEY_K:
+
+        for i in range(2):
+            farol[i].position.x = carro.pos + 0.155
+    elif key == glfw.KEY_B:
         carro.pos -= 0.01
         if carro.pos <= -5.10:
             carro.pos = 5
-                      # (só ativa quando aperta pela primeira vez)
-    # Tecla L para alternar a lanterna
-    elif key == glfw.KEY_P and action == glfw.PRESS:
+
+        for i in range(2):
+            farol[i].position.x = carro.pos + 0.155
+    elif key == glfw.KEY_O:
+        mult_ambient += 0.1
+    elif key == glfw.KEY_L:
+        mult_ambient -= 0.1
+        mult_ambient = max(mult_ambient, 0)
+    elif key == glfw.KEY_I:
+        mult_diffuse += 0.1
+    elif key == glfw.KEY_K:
+        mult_diffuse -= 0.1
+        mult_diffuse = max(mult_diffuse, 0)
+    elif key == glfw.KEY_U:
+        mult_specular += 0.1
+    elif key == glfw.KEY_J:
+        mult_specular -= 0.1
+        mult_specular = max(mult_specular, 0)
+    elif key == glfw.KEY_1 and action == glfw.PRESS:
         lanterna_ativa = not lanterna_ativa
-    # Tecla T para alternar a lâmpada
-    elif key == glfw.KEY_O and action == glfw.PRESS:
+    elif key == glfw.KEY_2 and action == glfw.PRESS:
         lampada_ativa = not lampada_ativa
-    elif key == 80 and action == glfw.PRESS: # p -> mostra (ou não) a malha poligonal 
-        #mostra_malha = not mostra_malha     
-        print(camera.Position)
+    elif key == glfw.KEY_3 and action == glfw.PRESS:
+        farol_ativo = not farol_ativo
+    elif key == glfw.KEY_P and action == glfw.PRESS:
+        print(farol[0].position)
+        print(farol[1].position)
+        print('----')
    
     # aplica limites na câmera
     vec_min = (-1.68604, -0.371484, -1.15517)
@@ -256,7 +282,6 @@ def view():
     return mat_view
 
 def projection():
-    global altura, largura
     # perspective parameters: fovy, aspect, near, far
     mat_projection = glm.perspective(glm.radians(camera.Zoom), largura/altura, 0.1, 100.0)
     
@@ -269,27 +294,41 @@ ILUMINAÇÃO
 """
 
 # Lampada
-lampada_luz = Light(True,
-                    position=glm.vec3(-0.2, -0.19, 0),
-                    diffuse=glm.vec3(1.0, 1.0, 0.8),
-                    specular=glm.vec3(1.0, 1.0, 0.8),
-                    constant=1,
-                    linear=0.136,
-                    quadratic=0.036)
+lampada_luz = Light(
+        inside=True,
+        position=glm.vec3(-0.2, -0.19, 0),
+        diffuse=glm.vec3(0.8),
+        specular=glm.vec3(0.6),
+        constant=1,
+        linear=0.136,
+        quadratic=0.036
+)
 
 # SpotLight da câmera
 lanterna = SpotLight(
-    True,
+    inside=True,
     position=camera.Position,
     direction=glm.normalize(camera.Front),
     cutOff=glm.cos(glm.radians(10)),
     outerCutOff=glm.cos(glm.radians(15)),
-    diffuse=glm.vec3(1.0),
+    diffuse=glm.vec3(1.0, 0.3, 1.0),  # roxo
     specular=glm.vec3(0.6),
     constant=1.0,
     linear=0.09,
     quadratic=0.032,
 )
+
+posicoes_farol = [glm.vec3(0.155, -0.445, 1.05), glm.vec3(0.155, -0.445, 0.96)]
+
+farol = [SpotLight(
+    inside=False,
+    position=posicoes_farol[i],
+    direction=glm.vec3(1, 0, 0),
+    cutOff=glm.cos(glm.radians(60)),
+    outerCutOff=glm.cos(glm.radians(80)),
+    diffuse=glm.vec3(1),
+    specular=glm.vec3(0.6)
+) for i in range(2)]
 
 """
 LOOP PRINCIPAL
@@ -298,6 +337,7 @@ LOOP PRINCIPAL
 glfw.show_window(window)
 
 glEnable(GL_DEPTH_TEST) ### importante para 3D
+glEnable(GL_CULL_FACE)
 
 while not glfw.window_should_close(window):
     currentFrame = glfw.get_time()
@@ -325,7 +365,6 @@ while not glfw.window_should_close(window):
     # passa parametros do shader
     shader.setVec3('viewPos', camera.Position)
     shader.setFloat('shininess', 32.0)
-    shader.setVec3('ambientLight', glm.vec3(1, 1, 1) * 0.1)
 
     # Define quais luzes estão ativas
     point_lights = []
@@ -337,21 +376,22 @@ while not glfw.window_should_close(window):
         spot_lights.append(lanterna)
         spot_lights[0].direction = glm.normalize(camera.Front)
         spot_lights[0].position = camera.Position
+    if farol_ativo:
+        spot_lights.extend(farol)
 
     shader.setInt('numPointLights', len(point_lights))
     shader.setInt('numSpotLights', len(spot_lights))
 
     # posiciona luzes
-    for i in range(len(point_lights)):
-        light = point_lights[i]
+    for i, light in enumerate(point_lights):
         shader.setVec3(f'pointLights[{i}].position', light.position)
         shader.setFloat(f'pointLights[{i}].constant', light.constant)
         shader.setFloat(f'pointLights[{i}].linear', light.linear)
         shader.setFloat(f'pointLights[{i}].quadratic', light.quadratic)
 
         if light.inside == is_inside:
-            shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse)
-            shader.setVec3(f'pointLights[{i}].specular', light.specular)
+            shader.setVec3(f'pointLights[{i}].diffuse', light.diffuse * mult_diffuse)
+            shader.setVec3(f'pointLights[{i}].specular', light.specular * mult_specular)
         else:
             shader.setVec3(f'pointLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'pointLights[{i}].specular', glm.vec3(0))
@@ -366,8 +406,8 @@ while not glfw.window_should_close(window):
         shader.setFloat(f'spotLights[{i}].quadratic', light.quadratic)
 
         if light.inside == is_inside:
-            shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse)
-            shader.setVec3(f'spotLights[{i}].specular', light.specular)
+            shader.setVec3(f'spotLights[{i}].diffuse', light.diffuse * mult_diffuse)
+            shader.setVec3(f'spotLights[{i}].specular', light.specular * mult_specular)
         else:
             shader.setVec3(f'spotLights[{i}].diffuse', glm.vec3(0))
             shader.setVec3(f'spotLights[{i}].specular', glm.vec3(0))
@@ -375,6 +415,11 @@ while not glfw.window_should_close(window):
 
     # desenha objetos
     for objeto, pos in zip(objetos, pos_objetos):
+        if hasattr(objeto, 'own_light') and objeto.own_light:
+            shader.setVec3('ambientLight', glm.vec3(1))
+        else:
+            shader.setVec3('ambientLight', glm.vec3(mult_ambient))
+
         objeto.desenha(pos, shader)
     
     glfw.swap_buffers(window)
