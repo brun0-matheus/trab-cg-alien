@@ -59,7 +59,7 @@ lampada = Lampada()
 
 objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
-objetos.append(carro)
+#objetos.append(carro)
 
 # Vetor que contém vértices de todos objetos
 vertices_list = []
@@ -121,15 +121,15 @@ deltaTime = 0.0	# time between current frame and last frame
 lastFrame = 0.0
 
 # transformações
-mostra_malha = False
 is_inside = False
 
 # Luzes
 lanterna_ativa = True
 lampada_ativa = True
 farol_ativo = True
+luz_ambiente_ativa = True
 
-mult_ambient = 0.1
+mult_ambient = 1
 mult_diffuse = 1
 mult_specular = 1
 
@@ -138,7 +138,8 @@ EVENTOS DE TECLADO
 """
 
 def key_event(window,key,scancode,action,mods):
-    global mostra_malha, is_inside, lanterna_ativa, lampada_ativa, farol_ativo
+    global is_inside, lanterna_ativa, lampada_ativa, farol_ativo
+    global luz_ambiente_ativa
     global mult_ambient, mult_diffuse, mult_specular
 
     # Quando solta a tecla não é pra fazer nada
@@ -201,6 +202,8 @@ def key_event(window,key,scancode,action,mods):
         lampada_ativa = not lampada_ativa
     elif key == glfw.KEY_3 and action == glfw.PRESS:
         farol_ativo = not farol_ativo
+    elif key == glfw.KEY_4 and action == glfw.PRESS:
+        luz_ambiente_ativa = not luz_ambiente_ativa
     elif key == glfw.KEY_P and action == glfw.PRESS:
         print(farol[0].position)
         print(farol[1].position)
@@ -315,7 +318,7 @@ lanterna = SpotLight(
     specular=glm.vec3(0.6),
     constant=1.0,
     linear=0.09,
-    quadratic=0.032,
+    quadratic=0.09,
 )
 
 posicoes_farol = [glm.vec3(0.155, -0.445, 1.05), glm.vec3(0.155, -0.445, 0.96)]
@@ -327,7 +330,10 @@ farol = [SpotLight(
     cutOff=glm.cos(glm.radians(60)),
     outerCutOff=glm.cos(glm.radians(80)),
     diffuse=glm.vec3(1),
-    specular=glm.vec3(0.6)
+    specular=glm.vec3(0.6),
+    constant=1.0,
+    linear=0.09,
+    quadratic=0.032,
 ) for i in range(2)]
 
 """
@@ -337,18 +343,11 @@ LOOP PRINCIPAL
 glfw.show_window(window)
 
 glEnable(GL_DEPTH_TEST) ### importante para 3D
-glEnable(GL_CULL_FACE)
 
 while not glfw.window_should_close(window):
     currentFrame = glfw.get_time()
     deltaTime = currentFrame - lastFrame
     lastFrame = currentFrame
-    
-    # mostra ou não a malha
-    if mostra_malha:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-    else:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)    
     glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -415,10 +414,16 @@ while not glfw.window_should_close(window):
 
     # desenha objetos
     for objeto, pos in zip(objetos, pos_objetos):
-        if hasattr(objeto, 'own_light') and objeto.own_light:
-            shader.setVec3('ambientLight', glm.vec3(1))
+        if luz_ambiente_ativa:
+            if hasattr(objeto, 'own_light') and objeto.own_light:
+                shader.setVec3('ambientLight', glm.vec3(1) * mult_ambient)
+            else:
+                branco = glm.vec3(0.1)
+                roxo = glm.vec3(0.4, 0.1, 0.4) * sinal.escala * 0.5
+
+                shader.setVec3('ambientLight', (branco+roxo) * mult_ambient )
         else:
-            shader.setVec3('ambientLight', glm.vec3(mult_ambient))
+            shader.setVec3('ambientLight', glm.vec3(0))
 
         objeto.desenha(pos, shader)
     
