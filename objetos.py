@@ -284,7 +284,7 @@ class Skybox:
 
         # A resolução controla quantas vezes a imagem da textura será repetida (em cada direção)
         resolucao_up = 30
-        resolucao_side = 1
+        resolucao_side = 10
 
         tex_coords = [
             # Cima
