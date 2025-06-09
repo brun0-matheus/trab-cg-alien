@@ -71,11 +71,15 @@ void main()
     for(int i = 0; i < numSpotLights; i++)
         result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);    
 
-    if(invisible == 1 && result.x < 0.5)
-        discard;
+    float alpha = 1.0;
+    if(invisible == 1) {
+        alpha = result.x - 0.3;
+        alpha = max(alpha, 0);
+        alpha = min(alpha, 1);
+    }
     
     vec3 noAlpha = vec3(texture); 
-    gl_FragColor = vec4(result * noAlpha, 1.0);
+    gl_FragColor = vec4(result * noAlpha, alpha);
 }
 
 // calculates the color when using a point light.
