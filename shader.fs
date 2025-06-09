@@ -43,6 +43,7 @@ uniform vec3 materialDiffuse;
 
 uniform int numPointLights;
 uniform int numSpotLights;
+uniform int invisible;
 
 uniform vec3 ambientLight;
 
@@ -69,6 +70,9 @@ void main()
     // phase 3: spot light
     for(int i = 0; i < numSpotLights; i++)
         result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);    
+
+    if(invisible == 1 && result.x < 0.5)
+        discard;
     
     vec3 noAlpha = vec3(texture); 
     gl_FragColor = vec4(result * noAlpha, 1.0);

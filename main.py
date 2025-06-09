@@ -57,7 +57,7 @@ sinal = Sinal()
 carro = Carro()
 lampada = Lampada()
 
-objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), Chao(), Skybox(), Casa()]
+objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), TintaInvisivel(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
 #objetos.append(carro)
 
@@ -378,8 +378,6 @@ while not glfw.window_should_close(window):
     if farol_ativo:
         spot_lights.extend(farol)
 
-    shader.setInt('numPointLights', len(point_lights))
-    shader.setInt('numSpotLights', len(spot_lights))
 
     # posiciona luzes
     for i, light in enumerate(point_lights):
@@ -414,6 +412,10 @@ while not glfw.window_should_close(window):
 
     # desenha objetos
     for objeto, pos in zip(objetos, pos_objetos):
+        shader.setInt('numPointLights', len(point_lights))
+        shader.setInt('numSpotLights', len(spot_lights))
+        shader.setInt('invisible', 0)
+
         if luz_ambiente_ativa:
             if hasattr(objeto, 'own_light') and objeto.own_light:
                 shader.setVec3('ambientLight', glm.vec3(1) * mult_ambient)
@@ -424,6 +426,12 @@ while not glfw.window_should_close(window):
                 shader.setVec3('ambientLight', (branco+roxo) * mult_ambient )
         else:
             shader.setVec3('ambientLight', glm.vec3(0))
+
+        if hasattr(objeto, 'invisible_paint') and objeto.invisible_paint:
+            shader.setVec3('ambientLight', 0)
+            shader.setInt('numPointLights', 0)
+            shader.setInt('numSpotLights', 1)
+            shader.setInt('invisible', 1)
 
         objeto.desenha(pos, shader)
     

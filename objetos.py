@@ -48,6 +48,15 @@ class Lousa(ObjetoTextura):
         s = 0.0003
         return model(90, 0, 1, 0, -0.765, -0.25, -0.1, s, s+0.00015, s)
 
+class TintaInvisivel(ObjetoTextura):   
+    def __init__(self):
+        self.invisible_paint = True
+        return super().__init__('tinta_invisivel.obj', glm.vec3(1), glm.vec3(1))
+
+    def get_model(self):   
+        s = 0.0003
+        return model(90, 0, 1, 0, -0.764, -0.25, -0.1, s, s+0.00015, s)
+
 """
 ALIEN
 """
