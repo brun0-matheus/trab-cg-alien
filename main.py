@@ -1,11 +1,9 @@
-# Bibliotecas e módulos
 import glfw
 from OpenGL.GL import *
 import numpy as np
 import glm
 import math
 
-# Módulos customizados
 from shader_m import Shader
 from objetos import *
 from camera import Camera

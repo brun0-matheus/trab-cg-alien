@@ -1,4 +1,3 @@
-# Importações necessárias
 from objeto_textura import ObjetoTextura
 import math
 import glm

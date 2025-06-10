@@ -1,7 +1,5 @@
-# Importa utilitários para carregar modelos e texturas
 from loading_utils import load_obj_and_texture
 
-# Importações de bibliotecas gráficas e matemática vetorial
 from OpenGL.GL import *
 import glm
 import numpy as np

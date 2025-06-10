@@ -1,4 +1,3 @@
-# Importa a biblioteca glm para vetores e operações matemáticas
 import glm
 
 # Classe base para representar uma luz pontual (Point Light)

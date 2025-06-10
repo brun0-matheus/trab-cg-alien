@@ -1,4 +1,3 @@
-# Importação de módulos necessários
 from enum import Enum
 from OpenGL.GL import *
 import glm
