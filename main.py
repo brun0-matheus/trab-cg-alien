@@ -9,6 +9,20 @@ from objetos import *
 from camera import Camera
 from lights import Light, SpotLight
 
+'''
+Controles:
+WASD e mouse: câmera
+O/L: aumenta/diminui luz ambiente
+I/K: aumenta/diminui luz difusa
+U/J: aumenta/diminui luz especular
+N/B: carro anda pra frente/trás
+X/Z: aumenta/diminui sinal
+1: liga/desliga lanterna
+2: liga/desliga lâmpada interna
+3: liga/desliga farol do carro
+4: liga/desliga luz ambiente
+'''
+
 """
 INICIALIZAÇÃO DA JANELA
 """
@@ -53,6 +67,7 @@ lampada = Lampada()
 
 objetos = [Servidor(i) for i in range(6)] + [PainelSolar(), Alien(), Lousa(), TintaInvisivel(), Chao(), Skybox(), Casa()]
 objetos += [antena, sinal, lampada]
+objetos += [carro]
 
 # Dados de geometria
 vertices_list, textures_coord_list, normals_list = [], [], []
@@ -140,8 +155,6 @@ def key_event(window,key,scancode,action,mods):
         camera.ProcessKeyboard(camera.RIGHT, deltaTime)
 
     # Ações nos objetos
-    elif key == glfw.KEY_Q:
-        antena.angle = max(antena.angle - 1, -40)
     elif key == glfw.KEY_X:
         sinal.escala = min(sinal.escala + 0.01, 5.3)
     elif key == glfw.KEY_Z:
